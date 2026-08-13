@@ -1,18 +1,18 @@
 import asyncio
-from agents import Agent, Runner
+from agents import Agent, Runner, function_tool
 from tools import calculate_total
 
-
-
+## adding calculate Tool to AI-Agent
+@function_tool
+def calculate_total(price: float, quantity: int) -> float:
+    return price * quantity
 
 agent = Agent(
     name="Software Helper",
         instructions="""
-            You are a senior software architect.
-            Explain software architecture concepts
-            using practical examples.
-            Prefer C# and .NET examples when appropriate.
-            Keep explanations clear and understandable.
+            You are a helpful software development assistant.
+            When a calculation is required, use the calculator tool.
+            Explain the result clearly to the user.
         """,
     tools=[calculate_total]
 )
