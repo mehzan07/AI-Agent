@@ -1,0 +1,15 @@
+Our company is called NordicTech Solutions.
+
+NordicTech Solutions is a software company based in Stockholm, Sweden. The company develops artificial intelligence solutions, automation systems, and data platforms for small and medium-sized businesses.
+
+The company was founded in 2020.
+
+Our main products are NordicAI, NordicData, and NordicAutomate.
+
+NordicAI is an AI assistant platform that helps businesses automate customer support and internal knowledge management.
+
+NordicData is a data analytics platform that allows companies to analyze business information and create dashboards.
+
+NordicAutomate is an automation platform used to connect business applications and automate repetitive tasks.
+
+The company focuses on secure, reliable, and easy-to-use AI solutions.

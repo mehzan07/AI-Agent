@@ -1,0 +1,16 @@
+
+NordicTech Solutions customer support is available Monday through Friday from 08:00 to 17:00 Central European Time.
+
+Customers can contact support through the customer portal or by email.
+
+Standard support requests are normally answered within one business day.
+
+Critical technical problems should be marked as urgent in the customer portal.
+
+An urgent request should include the customer's company name, contact information, product name, description of the problem, and any relevant error messages.
+
+NordicAI customers can also use the AI assistant to find information in the product documentation.
+
+The AI assistant should not invent information about company policies or product capabilities.
+
+If the required information cannot be found in the knowledge base, the customer should be informed that the information is unavailable and should be directed to customer support when appropriate.

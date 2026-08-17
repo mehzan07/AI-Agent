@@ -1,0 +1,21 @@
+Retrieval-Augmented Generation, or RAG, is a technique that allows an AI system to retrieve relevant information from a knowledge base before generating an answer.
+
+A RAG system normally contains several steps.
+
+First, documents are divided into smaller pieces called chunks.
+
+Second, the chunks are converted into numerical representations called embeddings.
+
+Third, the embeddings are stored in a vector database.
+
+When a user asks a question, the question is also converted into an embedding.
+
+The system compares the question embedding with the stored article embeddings and retrieves the most relevant chunks.
+
+The retrieved information is then provided to the language model.
+
+RAG is useful because the language model does not need to rely only on information contained in its original training data.
+
+RAG can also reduce the risk of the model inventing information because the model can use retrieved documents as evidence.
+
+In a company environment, RAG can be used to search internal policies, product documentation, manuals, reports, and other company documents.

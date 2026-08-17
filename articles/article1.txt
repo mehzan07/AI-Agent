@@ -1,0 +1,15 @@
+NordicAI is the company's main artificial intelligence product.
+
+NordicAI can answer questions, search company knowledge bases, summarize documents, and assist employees with daily tasks.
+
+NordicAI can use Retrieval-Augmented Generation, also known as RAG, to retrieve information from company documents before generating an answer.
+
+NordicData is designed for business analytics.
+
+NordicData can collect information from multiple business systems and present the information in dashboards and reports.
+
+NordicAutomate is designed for workflow automation.
+
+NordicAutomate can connect different applications and automatically perform repetitive business processes.
+
+For example, NordicAutomate can receive information from a customer form and send that information to a CRM system.
