@@ -1,9 +1,11 @@
-# python
 import asyncio
 import json
 import os
+import sys
+from pathlib import Path
 
 from agents import Agent, Runner, SQLiteSession, function_tool
+from agents.mcp import MCPServerStdio
 
 import chromadb
 from sentence_transformers import SentenceTransformer
@@ -152,7 +154,6 @@ class ArticleRAG:
         )
 
         ids = []
-
         metadatas = []
 
         for i in range(len(chunks)):
@@ -368,25 +369,69 @@ ARTICLE: {result['title']}
 
 
 # ============================================================
-# AGENT
+# MAIN
 # ============================================================
 
-agent = Agent(
+async def main():
 
-    name="Memory and RAG Agent",
+    # --------------------------------------------------------
+    # MCP SERVER
+    # --------------------------------------------------------
 
-    instructions="""
+    project_dir = Path(__file__).resolve().parent
+
+    python_executable = sys.executable
+
+    mcp_server_file = project_dir / "mcp_server.py"
+
+    print()
+    print("==============================")
+    print("Memory + RAG + MCP Agent")
+    print("==============================")
+    print()
+
+    print("Starting MCP server...")
+    print(f"Python: {python_executable}")
+    print(f"MCP server: {mcp_server_file}")
+
+    # Start the MCP server and keep it connected
+    # while the agent is running.
+    async with MCPServerStdio(
+        name="Project MCP Server",
+
+        params={
+            "command": python_executable,
+            "args": [
+                str(mcp_server_file)
+            ],
+        },
+    ) as server:
+
+        print("MCP server connected.")
+        print()
+
+        # ----------------------------------------------------
+        # AGENT
+        # ----------------------------------------------------
+
+        agent = Agent(
+
+            name="Memory, RAG and MCP Agent",
+
+            instructions="""
 You are a helpful AI assistant.
 
-You have access to two types of memory:
+You have access to several capabilities:
 
 1. Long-term user memory
 2. Conversation memory through the session
+3. An article knowledge base through the
+   search_articles tool
+4. Tools provided by an MCP server
 
-You also have access to an article knowledge base
-through the search_articles tool.
-
-IMPORTANT RAG RULES:
+==================================================
+RAG RULES
+==================================================
 
 - When the user's question is related to information
   that could be contained in the articles, use the
@@ -400,158 +445,205 @@ IMPORTANT RAG RULES:
 
 - If the article search does not contain enough
   information, clearly tell the user that the
-  information was not found in the article knowledge base.
+  information was not found in the article
+  knowledge base.
 
-- You may combine information from the articles,
-  the conversation, and your general knowledge when
-  appropriate.
+==================================================
+MCP RULES
+==================================================
 
-- If the user asks a normal general question that
-  clearly does not require the articles, you do not
-  need to use the RAG tool.
+- Use MCP tools when they are useful for answering
+  the user's question.
 
-LONG-TERM MEMORY:
+- The MCP tools are provided by an external MCP server.
 
-The user's long-term memory is provided in the prompt.
+- Do not pretend that an MCP tool exists if it is
+  not available.
 
-Use it when it is relevant to the conversation.
+- Do not invent information returned by MCP tools.
 
-If the user tells you something useful about themselves,
-acknowledge it naturally.
+==================================================
+MEMORY RULES
+==================================================
+
+- Long-term user memory is provided in the prompt.
+
+- Conversation memory is maintained through the
+  session.
+
+- Use remembered information when it is relevant.
+
+- If the user tells you something useful about
+  themselves, acknowledge it naturally.
+
+==================================================
+GENERAL BEHAVIOR
+==================================================
+
+Choose the appropriate capability based on the
+user's request.
+
+You may combine information from memory, RAG,
+MCP tools, and your general knowledge when
+appropriate.
 
 Always answer clearly and helpfully.
 """,
 
-    tools=[
-        search_articles
-    ]
-)
+            # Existing local RAG tool
+            tools=[
+                search_articles
+            ],
 
-
-# ============================================================
-# MAIN
-# ============================================================
-
-async def main():
-
-    session = SQLiteSession(
-        "memory_demo"
-    )
-
-    print()
-    print("==============================")
-    print("Memory + RAG Agent")
-    print("==============================")
-    print()
-    print("Type 'exit' to stop.")
-    print(
-        "Type 'remember:' followed by "
-        "information to save it."
-    )
-    print()
-
-    while True:
-
-        user_input = input(
-            "You: "
+            # New MCP connection
+            mcp_servers=[
+                server
+            ]
         )
 
         # ----------------------------------------------------
-        # EXIT
+        # SESSION
         # ----------------------------------------------------
 
-        if user_input.lower() == "exit":
-
-            break
-
-        # ----------------------------------------------------
-        # SAVE LONG-TERM MEMORY
-        # ----------------------------------------------------
-
-        if user_input.lower().startswith(
-            "remember:"
-        ):
-
-            information = (
-                user_input[9:].strip()
-            )
-
-            memory.setdefault(
-                "user_information",
-                []
-            ).append(
-                information
-            )
-
-            save_memory(
-                memory
-            )
-
-            print(
-                "Agent: I will remember that."
-            )
-
-            print()
-
-            continue
-
-        # ----------------------------------------------------
-        # LOAD LONG-TERM MEMORY
-        # ----------------------------------------------------
-
-        memory_text = json.dumps(
-            memory,
-            indent=2,
-            ensure_ascii=False
+        session = SQLiteSession(
+            "memory_demo"
         )
 
+        print("Agent is ready.")
+        print("Type 'exit' to stop.")
+        print(
+            "Type 'remember:' followed by "
+            "information to save it."
+        )
+        print()
+
         # ----------------------------------------------------
-        # CREATE PROMPT
+        # INTERACTIVE LOOP
         # ----------------------------------------------------
 
-        prompt = f"""
+        while True:
+
+            user_input = input(
+                "You: "
+            ).strip()
+
+            # ------------------------------------------------
+            # EXIT
+            # ------------------------------------------------
+
+            if user_input.lower() == "exit":
+
+                print()
+                print("Goodbye!")
+
+                break
+
+            # ------------------------------------------------
+            # EMPTY INPUT
+            # ------------------------------------------------
+
+            if not user_input:
+
+                continue
+
+            # ------------------------------------------------
+            # SAVE LONG-TERM MEMORY
+            # ------------------------------------------------
+
+            if user_input.lower().startswith(
+                "remember:"
+            ):
+
+                information = (
+                    user_input[9:].strip()
+                )
+
+                if information:
+
+                    memory.setdefault(
+                        "user_information",
+                        []
+                    ).append(
+                        information
+                    )
+
+                    save_memory(
+                        memory
+                    )
+
+                    print(
+                        "Agent: I will remember that."
+                    )
+
+                print()
+
+                continue
+
+            # ------------------------------------------------
+            # LOAD LONG-TERM MEMORY
+            # ------------------------------------------------
+
+            memory_text = json.dumps(
+                memory,
+                indent=2,
+                ensure_ascii=False
+            )
+
+            # ------------------------------------------------
+            # CREATE PROMPT
+            # ------------------------------------------------
+
+            prompt = f"""
 Here is information remembered about the user:
 
 {memory_text}
 
 Use this information when it is relevant.
 
-The agent also has access to an article knowledge
-base through the search_articles tool.
+The agent has access to an article knowledge base
+through the search_articles tool.
+
+The agent also has access to tools provided by
+an MCP server.
 
 If the user's question relates to the articles,
 use the search_articles tool.
+
+If the user's question can be answered using an
+MCP tool, use the appropriate MCP tool.
 
 User message:
 
 {user_input}
 """
 
-        # ----------------------------------------------------
-        # RUN AGENT
-        # ----------------------------------------------------
+            # ------------------------------------------------
+            # RUN AGENT
+            # ------------------------------------------------
 
-        try:
+            try:
 
-            result = await Runner.run(
-                agent,
-                prompt,
-                session=session
-            )
+                result = await Runner.run(
+                    agent,
+                    prompt,
+                    session=session
+                )
 
-            print(
-                "Agent:",
-                result.final_output
-            )
+                print()
+                print(
+                    "Agent:",
+                    result.final_output
+                )
 
-        except Exception as error:
+            except Exception as error:
 
-            print(
-                "Agent error:",
-                error
-            )
+                print()
+                print(
+                    "Agent error:",
+                    error
+                )
 
-        print()
+            print()
 
 
 # ============================================================
@@ -561,4 +653,3 @@ User message:
 if __name__ == "__main__":
 
     asyncio.run(main())
-
